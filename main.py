@@ -8,7 +8,7 @@ import random
 import matplotlib
 import wandb
 import ray
-from ray.air.integrations.wandb import WandbLoggerCallback
+from ray.tune.integration.wandb import WandbLoggerCallback
 from ray.tune import register_env
 from ray.rllib.agents.ppo import PPOTrainer
 from ray.rllib.models import ModelCatalog
@@ -16,8 +16,6 @@ from ray.rllib.models import ModelCatalog
 from policy_net import PolicyNetwork
 
 matplotlib.use("QtAgg")
-
-
 
 # for i in range(100):
 #     # (Optional) Render the env state
@@ -48,6 +46,7 @@ def train(
     seed,
     render_env,
     wandb_name,
+    device,
     share_parameters,
     vmas_device="cpu",
 ):
@@ -98,7 +97,7 @@ def train(
             "rollout_fragment_length": rollout_fragment_length,
             "sgd_minibatch_size": sgd_minibatch_size,
             "num_sgd_iter": 45,
-            "num_gpus": 1,
+            "num_gpus": 1 if device == 'cuda' else 0,
             "num_workers": num_workers,
             "num_cpus_per_worker": 1,
             "num_envs_per_worker": num_envs_per_worker,
@@ -164,14 +163,14 @@ if __name__ == "__main__":
 
     # Optional
     parser.add_argument('--render', action="store_true", default=False, help='Render environment')
-    parser.add_argument('--train_batch_size', default=6400, type=int, help='train batch size')
-    parser.add_argument('--sgd_minibatch_size', default=128, type=int, help='sgd minibatch size')
+    parser.add_argument('--train_batch_size', default=10000, type=int, help='train batch size')
+    parser.add_argument('--sgd_minibatch_size', default=256, type=int, help='sgd minibatch size')
     parser.add_argument('--training_iterations', default=5000, type=int, help='number of training iterations')
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--wandb_name', default="rllib_training", help='wandb run name')
 
     parser.add_argument('--num_envs', default=32, type=int)
-    parser.add_argument('--num_workers', default=2, type=int)
+    parser.add_argument('--num_workers', default=5, type=int)
     parser.add_argument('--num_cpus_per_worker', default=1, type=int)
     parser.add_argument('-d', '--device', default='cuda')
     args = parser.parse_args()
@@ -196,4 +195,5 @@ if __name__ == "__main__":
         wandb_name=args.wandb_name,
         share_parameters=args.share_params,
         seed=args.seed,
+        device=args.device,
     )
