@@ -170,7 +170,7 @@ if __name__ == "__main__":
     parser.add_argument('--wandb_name', default="rllib_training", help='wandb run name')
 
     parser.add_argument('--num_envs', default=32, type=int)
-    parser.add_argument('--num_workers', default=5, type=int)
+    parser.add_argument('--num_workers', default=1, type=int)
     parser.add_argument('--num_cpus_per_worker', default=1, type=int)
     parser.add_argument('-d', '--device', default='cuda')
     args = parser.parse_args()
