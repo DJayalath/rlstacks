@@ -14,6 +14,7 @@ from ray.rllib.agents.ppo import PPOTrainer
 from ray.rllib.models import ModelCatalog
 
 from policy_net import PolicyNetwork
+from stack_net import StackNetwork
 
 matplotlib.use("QtAgg")
 
@@ -29,11 +30,11 @@ matplotlib.use("QtAgg")
 
 def train(
     scenario_name,
-    model,
     encoder,
     encoding_dim,
     encoder_file,
     encoder_loss,
+    use_stack,
     use_proj,
     no_stand,
     train_batch_size,
@@ -62,7 +63,10 @@ def train(
 
     register_env('Maze-v0', lambda config: env)
 
-    ModelCatalog.register_custom_model("policy_net", PolicyNetwork)
+    if use_stack is True:
+        ModelCatalog.register_custom_model("policy_net", StackNetwork)
+    else:
+        ModelCatalog.register_custom_model("policy_net", PolicyNetwork)
 
     # Train policy!
     ray.tune.run(
@@ -85,24 +89,24 @@ def train(
             "framework": "torch",
             "env": 'Maze-v0',
             "render_env": render_env,
-            "kl_coeff": 0.01,
-            "kl_target": 0.01,
-            "lambda": 0.9,
-            "clip_param": 0.2,
-            "vf_loss_coeff": 1,
-            "vf_clip_param": float("inf"),
-            "entropy_coeff": 0.01,
+            # "kl_coeff": 0.01,
+            # "kl_target": 0.01,
+            # "lambda": 0.9,
+            # "clip_param": 0.2,
+            # "vf_loss_coeff": 1,
+            # "vf_clip_param": float("inf"),
+            # "entropy_coeff": 0.01,
             "train_batch_size": train_batch_size,
             # Should remain close to max steps to avoid bias
             "rollout_fragment_length": rollout_fragment_length,
             "sgd_minibatch_size": sgd_minibatch_size,
-            "num_sgd_iter": 45,
+            # "num_sgd_iter": 45,
             "num_gpus": 1 if device == 'cuda' else 0,
             "num_workers": num_workers,
             "num_cpus_per_worker": 1,
             "num_envs_per_worker": num_envs_per_worker,
-            "lr": 5e-5,
-            "gamma": 0.99,
+            # "lr": 5e-5,
+            # "gamma": 0.99,
             "use_gae": True,
             "use_critic": True,
             "batch_mode": "complete_episodes",
@@ -148,7 +152,7 @@ if __name__ == "__main__":
 
     # Required
     parser.add_argument('-c', '--scenario', default=None, help='VMAS scenario')
-    parser.add_argument('--model', default='ippo', help='Model: ippo/cppo/hetippo/joippo')
+    parser.add_argument('--use_stack', action="store_true", default=False, help='use a stack')
 
     # Joint observations with encoder
     parser.add_argument('--encoder', default=None, help='Encoder type: mlp/sae. Do not use this option for None')
@@ -163,7 +167,7 @@ if __name__ == "__main__":
 
     # Optional
     parser.add_argument('--render', action="store_true", default=False, help='Render environment')
-    parser.add_argument('--train_batch_size', default=10000, type=int, help='train batch size')
+    parser.add_argument('--train_batch_size', default=2560 * 10, type=int, help='train batch size')
     parser.add_argument('--sgd_minibatch_size', default=256, type=int, help='sgd minibatch size')
     parser.add_argument('--training_iterations', default=5000, type=int, help='number of training iterations')
     parser.add_argument('--seed', default=0, type=int)
@@ -177,7 +181,7 @@ if __name__ == "__main__":
 
     train(
         scenario_name=args.scenario,
-        model=args.model,
+        use_stack=args.use_stack,
         encoder=args.encoder,
         encoding_dim=args.encoding_dim,
         encoder_file=args.encoder_file,
